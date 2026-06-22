@@ -1,0 +1,53 @@
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Clone Repository') {
+            steps {
+                git 'https://github.com/USERNAME/php-app.git'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh 'composer install'
+            }
+        }
+
+        stage('Unit Test') {
+            steps {
+                sh './vendor/bin/phpunit'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t php-app:latest .'
+            }
+        }
+
+        stage('Deploy Docker Container') {
+            steps {
+                sh '''
+                docker stop php-app || true
+                docker rm php-app || true
+                docker run -d \
+                  --name php-app \
+                  -p 8081:80 \
+                  php-app:latest
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline berhasil!'
+        }
+
+        failure {
+            echo 'Pipeline gagal!'
+        }
+    }
+}
